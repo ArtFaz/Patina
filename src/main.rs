@@ -4,7 +4,8 @@ mod app;
 
 use anyhow::Result;
 use clap::Parser;
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+// Adicionamos KeyModifiers para detectar o Ctrl
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crate::app::{App, Mode};
 
 #[derive(Parser, Debug)]
@@ -38,17 +39,21 @@ fn main() -> Result<()> {
                     continue;
                 }
 
+                // --- ATALHOS GLOBAIS (Fase 7) ---
+                // Verifica se Ctrl + s foi pressionado
+                if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('s') {
+                    app.save_file();
+                    continue; // Pula o resto da lógica (não insere 's' no texto)
+                }
+
                 match app.mode {
-                    // --- MODO NORMAL ---
                     Mode::Normal => match key.code {
                         KeyCode::Char('q') => break,
 
-                        // Atalhos de Mudança de Modo
-                        KeyCode::Char('I') => app.switch_mode(Mode::Insert), // Shift+i
-                        KeyCode::Char('?') => app.switch_mode(Mode::Help),   // Abre Ajuda
-                        KeyCode::Char('e') => app.switch_mode(Mode::Insert), // Atalho do Dashboard
+                        KeyCode::Char('I') => app.switch_mode(Mode::Insert),
+                        KeyCode::Char('?') => app.switch_mode(Mode::Help),
+                        KeyCode::Char('e') => app.switch_mode(Mode::Insert),
 
-                        // Movimento
                         KeyCode::Char('h') | KeyCode::Left => app.move_cursor_left(),
                         KeyCode::Char('j') | KeyCode::Down => app.move_cursor_down(),
                         KeyCode::Char('k') | KeyCode::Up => app.move_cursor_up(),
@@ -57,7 +62,6 @@ fn main() -> Result<()> {
                         _ => {}
                     },
 
-                    // --- MODO INSERT ---
                     Mode::Insert => match key.code {
                         KeyCode::Esc => app.switch_mode(Mode::Normal),
                         KeyCode::Enter => app.enter_key(),
@@ -70,9 +74,7 @@ fn main() -> Result<()> {
                         _ => {}
                     },
 
-                    // --- MODO HELP ---
                     Mode::Help => match key.code {
-                        // Qualquer uma dessas teclas fecha a ajuda
                         KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('q') => {
                             app.switch_mode(Mode::Normal);
                         }
